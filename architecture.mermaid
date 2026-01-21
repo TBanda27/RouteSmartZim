@@ -1,0 +1,383 @@
+---
+title: RouteSmart Zim - System Architecture
+---
+
+%% ===========================================
+%% SYSTEM ARCHITECTURE DIAGRAM
+%% ===========================================
+
+flowchart TB
+    subgraph Client["Client (Browser)"]
+        UI[Bootstrap Frontend]
+        GEO[Geolocation API]
+        TXT[Text Input Parser<br/>Names or Google Maps Links]
+    end
+
+    subgraph SpringBoot["Spring Boot Application"]
+        RC[RouteController]
+        RL[RateLimitService<br/>3 req/hr per IP]
+        GMS[GoogleMapsService]
+        LP[LocationParserService]
+        OPS[OptimizationService]
+    end
+
+    subgraph Python["Python Optimizer"]
+        TSP[OR-Tools TSP Solver]
+    end
+
+    subgraph External["External Services"]
+        GAPI[Google Maps API<br/>Geocoding + Distance Matrix]
+    end
+
+    UI -->|POST /api/optimize| RC
+    GEO -->|Current Location| UI
+    TXT -->|Location Lines| UI
+
+    RC -->|Check Limit| RL
+    RL -->|Allowed| LP
+    RL -->|Blocked| RC
+
+    LP -->|Parse Lines| LP
+    LP -->|Google Maps URL| LP
+    LP -->|Location Name| GMS
+    GMS -->|Geocode Address| GAPI
+    GAPI -->|Coordinates| GMS
+
+    GMS -->|Fetch Distance Matrix| GAPI
+    GAPI -->|Distance/Duration Data| GMS
+    GMS -->|Matrix Data| OPS
+
+    OPS -->|JSON via ProcessBuilder| TSP
+    TSP -->|Optimized Sequence| OPS
+    OPS -->|RouteResponse| RC
+    RC -->|JSON Response| UI
+
+%% ===========================================
+%% SEQUENCE DIAGRAM - MAIN FLOW
+%% ===========================================
+
+sequenceDiagram
+    autonumber
+    participant U as User
+    participant F as Frontend
+    participant C as RouteController
+    participant R as RateLimitService
+    participant L as LocationParserService
+    participant G as GoogleMapsService
+    participant O as OptimizationService
+    participant P as Python OR-Tools
+    participant API as Google Maps API
+
+    U->>F: Enter locations in text area<br/>(one per line)
+    U->>F: Select route type (round-trip/one-way)
+    F->>F: Validate (max 10 locations)
+    F->>C: POST /api/optimize
+
+    C->>R: checkRateLimit(clientIP)
+
+    alt Rate Limit Exceeded
+        R-->>C: BLOCKED
+        C-->>F: 429 Too Many Requests
+        F-->>U: "Try again in X minutes"
+    else Allowed
+        R-->>C: ALLOWED
+
+        loop For each input line
+            C->>L: parseLine(inputLine)
+            alt Line is Google Maps URL
+                L->>L: extractCoordsFromUrl()
+                L-->>C: Location with coords
+            else Line is location name
+                L->>G: geocode(locationName)
+                G->>API: Geocoding request
+                API-->>G: Coordinates
+                G-->>L: Location with coords
+                L-->>C: Location with coords
+            end
+        end
+
+        C->>G: getDistanceMatrix(locations)
+        G->>API: Request distance matrix
+        API-->>G: Matrix response
+        G-->>C: DistanceMatrix object
+
+        C->>O: optimize(matrix, routeType)
+        O->>P: Execute python optimizer.py
+        P->>P: Solve TSP with OR-Tools
+        P-->>O: Optimized sequence JSON
+        O-->>C: RouteResponse
+
+        C-->>F: 200 OK + RouteResponse
+        F->>F: Render results
+        F->>F: Generate Google Maps link
+        F-->>U: Display optimized route
+    end
+
+%% ===========================================
+%% CLASS DIAGRAM - DATA MODELS
+%% ===========================================
+
+classDiagram
+    class Location {
+        +String id
+        +String name
+        +String originalInput
+        +Double latitude
+        +Double longitude
+        +InputType inputType
+        +Boolean isStart
+        +Boolean isEnd
+    }
+
+    class InputType {
+        <<enumeration>>
+        GOOGLE_MAPS_URL
+        LOCATION_NAME
+        CURRENT_LOCATION
+    }
+
+    class RouteRequest {
+        +String rawInput
+        +List~Location~ locations
+        +RouteType routeType
+        +String clientIp
+        +validate() Boolean
+    }
+
+    class RouteResponse {
+        +List~Location~ optimizedOrder
+        +Double totalDistanceKm
+        +Integer totalTimeMinutes
+        +String googleMapsUrl
+        +Integer remainingRequests
+        +LocalDateTime rateLimitReset
+    }
+
+    class DistanceMatrix {
+        +List~String~ locationNames
+        +int[][] distances
+        +int[][] durations
+        +getDistance(i, j) int
+        +getDuration(i, j) int
+    }
+
+    class RateLimitBucket {
+        +String clientIp
+        +Integer tokensRemaining
+        +LocalDateTime resetTime
+        +tryConsume() Boolean
+        +getSecondsUntilReset() Long
+    }
+
+    class RouteType {
+        <<enumeration>>
+        ROUND_TRIP
+        ONE_WAY_FIXED_END
+        ONE_WAY_OPEN
+    }
+
+    Location --> InputType : has
+    RouteRequest --> Location : contains
+    RouteRequest --> RouteType : has
+    RouteResponse --> Location : contains
+    DistanceMatrix --> Location : references
+
+%% ===========================================
+%% COMPONENT DIAGRAM - PROJECT STRUCTURE
+%% ===========================================
+
+flowchart LR
+    subgraph Frontend["src/main/resources/static"]
+        HTML[index.html]
+        CSS[css/style.css]
+        JS[js/app.js]
+    end
+
+    subgraph Controllers["controller"]
+        RC2[RouteController.java]
+    end
+
+    subgraph Services["service"]
+        GMS2[GoogleMapsService.java]
+        LPS2[LocationParserService.java]
+        OPS2[OptimizationService.java]
+        RLS2[RateLimitService.java]
+    end
+
+    subgraph Models["model"]
+        LOC[Location.java]
+        REQ[RouteRequest.java]
+        RES[RouteResponse.java]
+        DM[DistanceMatrix.java]
+        RT[RouteType.java]
+        IT[InputType.java]
+    end
+
+    subgraph Config["config"]
+        RLC[RateLimitConfig.java]
+        GMC[GoogleMapsConfig.java]
+    end
+
+    subgraph PythonDir["python"]
+        OPT[optimizer.py]
+    end
+
+    HTML --> JS
+    JS --> RC2
+    RC2 --> RLS2
+    RC2 --> LPS2
+    LPS2 --> GMS2
+    RC2 --> GMS2
+    RC2 --> OPS2
+    OPS2 --> OPT
+    GMS2 --> DM
+    RC2 --> REQ
+    RC2 --> RES
+    REQ --> LOC
+    LOC --> IT
+
+%% ===========================================
+%% STATE DIAGRAM - RATE LIMITING
+%% ===========================================
+
+stateDiagram-v2
+    [*] --> Available: New IP Address
+
+    Available --> Request1: First request
+    Request1 --> Available: 2 tokens left
+
+    Available --> Request2: Second request
+    Request2 --> Available: 1 token left
+
+    Available --> Request3: Third request
+    Request3 --> Exhausted: 0 tokens left
+
+    Exhausted --> Waiting: Requests blocked
+    Waiting --> Available: After 1 hour reset
+
+    note right of Exhausted
+        Returns 429 status
+        Shows reset time
+    end note
+
+%% ===========================================
+%% FLOWCHART - INPUT PARSING PROCESS
+%% ===========================================
+
+flowchart TD
+    A[User enters text in textarea] --> B[Split by newlines]
+    B --> C{Line count <= 10?}
+    C -->|No| D[Show max limit error]
+    D --> A
+
+    C -->|Yes| E[Process each line]
+    E --> F{Line empty?}
+    F -->|Yes| G[Skip line]
+    G --> E
+
+    F -->|No| H{Contains google.com/maps<br/>or goo.gl/maps?}
+
+    H -->|Yes| I[Extract coordinates from URL]
+    I --> J{Valid coordinates?}
+    J -->|No| K[Show URL parse error]
+    K --> A
+    J -->|Yes| L[Add to location list]
+
+    H -->|No| M[Treat as location name]
+    M --> N[Will geocode via Google API]
+    N --> L
+
+    L --> O{More lines?}
+    O -->|Yes| E
+    O -->|No| P{At least 2 locations?}
+    P -->|No| Q[Show minimum error]
+    Q --> A
+    P -->|Yes| R[Enable optimize button]
+
+%% ===========================================
+%% FLOWCHART - GOOGLE MAPS URL PATTERNS
+%% ===========================================
+
+flowchart LR
+    subgraph Supported["Supported URL Formats"]
+        U1["https://www.google.com/maps?q=-17.8419,31.0678"]
+        U2["https://maps.google.com/maps?q=-17.8419,31.0678"]
+        U3["https://www.google.com/maps/place/-17.8419,31.0678"]
+        U4["https://www.google.com/maps/@-17.8419,31.0678,15z"]
+        U5["https://goo.gl/maps/abc123"]
+    end
+
+    subgraph Extraction["Coordinate Extraction"]
+        R1["Regex: q=(-?\\d+\\.\\d+),(-?\\d+\\.\\d+)"]
+        R2["Regex: place/(-?\\d+\\.\\d+),(-?\\d+\\.\\d+)"]
+        R3["Regex: @(-?\\d+\\.\\d+),(-?\\d+\\.\\d+)"]
+        R4["Expand short URL first"]
+    end
+
+    U1 --> R1
+    U2 --> R1
+    U3 --> R2
+    U4 --> R3
+    U5 --> R4
+
+%% ===========================================
+%% USER JOURNEY
+%% ===========================================
+
+journey
+    title User Journey - Route Optimization
+    section Input Phase
+        Visit website: 5: User
+        Allow geolocation: 3: User
+        Enter locations in textarea: 5: User
+        Paste Google Maps links: 4: User
+        Mix names and links freely: 5: User
+        Select round-trip option: 5: User
+    section Processing
+        Click Optimize: 5: User
+        Wait for results: 3: User
+    section Output Phase
+        View optimized route: 5: User
+        See total distance saved: 5: User
+        Click Google Maps link: 5: User
+        Navigate to deliveries: 5: User
+
+%% ===========================================
+%% UI MOCKUP - TEXT INPUT
+%% ===========================================
+
+flowchart TB
+    subgraph UILayout["RouteSmart Zim - UI Layout"]
+        subgraph Header["Header"]
+            LOGO[RouteSmart Zim Logo]
+            TAG[Save Fuel. Optimize Routes.]
+        end
+
+        subgraph InputSection["Input Section"]
+            LOC_BTN[Use My Current Location]
+            TEXTAREA["Textarea: Enter locations one per line<br/>───────────────────────<br/>Mbare Musika, Harare<br/>https://maps.google.com/?q=-17.82,31.05<br/>Avondale Shopping Centre<br/>Eastgate Mall<br/>───────────────────────"]
+            COUNTER[4/10 locations]
+        end
+
+        subgraph Options["Route Options"]
+            OPT1["○ Round trip (return to start)"]
+            OPT2["● One-way (end at last stop)"]
+            OPT3["○ One-way (optimize end point)"]
+        end
+
+        subgraph Actions["Actions"]
+            BTN[Optimize Route]
+            REMAINING[3 requests remaining]
+        end
+
+        subgraph Results["Results Section"]
+            LIST["1. Start: Current Location<br/>2. Eastgate Mall (3.2 km)<br/>3. Avondale Shopping Centre (2.1 km)<br/>4. Mbare Musika (5.8 km)"]
+            STATS["Total: 11.1 km | ~28 mins"]
+            MAPS_LINK[Open in Google Maps]
+        end
+    end
+
+    Header --> InputSection
+    InputSection --> Options
+    Options --> Actions
+    Actions --> Results

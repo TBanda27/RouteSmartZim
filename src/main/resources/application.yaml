@@ -1,0 +1,21 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: routesmart-zim
+
+# Google Maps API Configuration
+google:
+  maps:
+    api-key: ${GOOGLE_MAPS_API_KEY}
+
+# Rate Limiting Configuration
+rate-limit:
+  requests-per-hour: ${RATE_LIMIT_REQUESTS_PER_HOUR:3}
+  max-locations: ${RATE_LIMIT_MAX_LOCATIONS:10}
+
+# Python Optimizer Configuration
+optimizer:
+  python-path: ${PYTHON_PATH:python}
+  script-path: ${user.dir}/python/optimizer.py

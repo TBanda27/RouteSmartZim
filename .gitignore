@@ -1,0 +1,60 @@
+# Compiled class files
+target/
+
+# Claude Code
+.claude/
+
+# Windows artifacts
+nul
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Maven
+*.jar
+*.war
+*.ear
+
+# Logs
+*.log
+logs/
+
+# Environment variables
+.env
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+
+# Application properties with secrets
+application-local.yml
+application-prod.yml
+*.pdf
+*.docx
+*.xlsx
+
+*.html
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.mp4
+.claude
+*.claude-workspace
+
+
+
+
