@@ -10,8 +10,6 @@ import org.springframework.context.annotation.Configuration;
 @Getter
 @Setter
 public class RateLimitConfig {
-
     private int requestsPerHour;
     private int maxLocations;
-
 }
