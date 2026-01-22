@@ -1,7 +1,7 @@
 package com.routesmart.controller;
 
-import com.routesmart.model.RouteRequest;
-import com.routesmart.model.RouteResponse;
+import com.routesmart.dto.RouteRequest;
+import com.routesmart.dto.RouteResponse;
 import com.routesmart.service.RateLimitService;
 import com.routesmart.service.RouteSmartService;
 import jakarta.servlet.http.HttpServletRequest;
