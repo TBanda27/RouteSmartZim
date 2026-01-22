@@ -14,9 +14,10 @@ import java.util.regex.Pattern;
 @Slf4j
 public class LocationParserService {
 
-    // Eircode pattern: A65 F4E2 or A65F4E2
+    // Eircode pattern: D01 F5P2, D6W F4E2, A65F4E2, etc.
+    // Format: 1 letter + 2 alphanumeric + optional space + 4 alphanumeric
     private static final Pattern EIRCODE_PATTERN = Pattern.compile(
-            "^[A-Z][0-9]{2}\\s?[A-Z0-9]{4}$",
+            "^[A-Z][0-9A-Z]{2}[ ]?[A-Z0-9]{4}$",
             Pattern.CASE_INSENSITIVE
     );
 
@@ -54,7 +55,10 @@ public class LocationParserService {
     }
 
     private boolean isEircode(String input) {
-        return EIRCODE_PATTERN.matcher(input.trim()).matches();
+        String cleaned = input.trim().replaceAll("\\s+", " ");
+        boolean matches = EIRCODE_PATTERN.matcher(cleaned).matches();
+        log.debug("Eircode check for '{}' (cleaned: '{}'): {}", input, cleaned, matches);
+        return matches;
     }
 
     private Location parseGoogleMapsUrl(String input) {
