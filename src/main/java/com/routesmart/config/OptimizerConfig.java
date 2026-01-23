@@ -11,6 +11,5 @@ import org.springframework.context.annotation.Configuration;
 @Setter
 public class OptimizerConfig {
 
-    private String pythonPath;
-    private String scriptPath;
+    private String url;
 }

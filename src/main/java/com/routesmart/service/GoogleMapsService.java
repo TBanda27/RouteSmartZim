@@ -47,7 +47,8 @@ public class GoogleMapsService {
 
     public void geocodeLocation(Location location) {
         if (location.getLatitude() != null && location.getLongitude() != null) {
-            log.info("Location already has coordinates: {}", location.getName());
+            // Already has coordinates - do reverse geocoding to get address
+            reverseGeocodeLocation(location);
             return;
         }
 
@@ -68,6 +69,28 @@ public class GoogleMapsService {
             }
         } catch (Exception e) {
             log.error("Error geocoding location '{}': {}", location.getName(), e.getMessage());
+        }
+    }
+
+    private void reverseGeocodeLocation(Location location) {
+        try {
+            LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+            GeocodingResult[] results = GeocodingApi.reverseGeocode(geoApiContext, latLng).await();
+
+            if (results != null && results.length > 0) {
+                String formattedAddress = results[0].formattedAddress;
+                location.setName(formattedAddress);
+                log.info("Reverse geocoded ({}, {}) -> {}",
+                        location.getLatitude(),
+                        location.getLongitude(),
+                        formattedAddress);
+            } else {
+                log.warn("Reverse geocoding failed for ({}, {}): No results",
+                        location.getLatitude(), location.getLongitude());
+            }
+        } catch (Exception e) {
+            log.error("Error reverse geocoding ({}, {}): {}",
+                    location.getLatitude(), location.getLongitude(), e.getMessage());
         }
     }
 

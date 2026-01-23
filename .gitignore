@@ -45,7 +45,6 @@ application-prod.yml
 *.docx
 *.xlsx
 
-*.html
 *.png
 *.jpg
 *.jpeg

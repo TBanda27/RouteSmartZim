@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RouteSmart Zim</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #ffffff;
+            color: #000000;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        .form-control, .form-select {
+            border: 1px solid #cccccc;
+            border-radius: 4px;
+            background-color: #ffffff;
+            color: #000000;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #999999;
+            box-shadow: none;
+        }
+
+        .btn-primary {
+            background-color: #000000;
+            border-color: #000000;
+            color: #ffffff;
+        }
+
+        .btn-primary:hover {
+            background-color: #333333;
+            border-color: #333333;
+        }
+
+        .btn-outline-secondary {
+            border-color: #cccccc;
+            color: #000000;
+        }
+
+        .btn-outline-secondary:hover {
+            background-color: #f5f5f5;
+            border-color: #999999;
+            color: #000000;
+        }
+
+        .card {
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+        }
+
+        .location-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            background-color: #ffffff;
+        }
+
+        .location-item input {
+            flex: 1;
+            border: none;
+            outline: none;
+            font-size: 14px;
+        }
+
+        .location-item input::placeholder {
+            color: #999999;
+        }
+
+        .location-number {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background-color: #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            margin-right: 12px;
+            color: #666666;
+        }
+
+        .remove-btn {
+            background: none;
+            border: none;
+            color: #999999;
+            cursor: pointer;
+            padding: 4px 8px;
+            font-size: 18px;
+        }
+
+        .remove-btn:hover {
+            color: #000000;
+        }
+
+        .location-btn {
+            background: none;
+            border: none;
+            color: #666666;
+            cursor: pointer;
+            padding: 4px 8px;
+            font-size: 16px;
+        }
+
+        .location-btn:hover {
+            color: #000000;
+        }
+
+        .location-btn:disabled {
+            color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .header-subtitle {
+            color: #666666;
+            font-size: 14px;
+        }
+
+        .requests-remaining {
+            font-size: 12px;
+            color: #666666;
+        }
+
+        #results {
+            display: none;
+        }
+
+        .result-item {
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        .result-distance {
+            color: #666666;
+            font-size: 13px;
+        }
+
+        .total-stats {
+            background-color: #f9f9f9;
+            padding: 16px;
+            border-radius: 4px;
+        }
+
+        .map-container {
+            background-color: #f5f5f5;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .map-legend {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-marker {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            background-color: #000000;
+            color: #ffffff;
+            font-size: 10px;
+            font-weight: bold;
+            border-radius: 50%;
+        }
+
+        .legend-line {
+            display: inline-block;
+            width: 20px;
+            height: 3px;
+            background-color: #4285f4;
+            border-radius: 2px;
+        }
+
+        .route-summary {
+            background-color: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 12px;
+            margin-top: 12px;
+        }
+
+        .route-summary-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .route-summary-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            font-size: 14px;
+        }
+
+        .route-summary-item span:last-child {
+            font-weight: 500;
+        }
+        footer {
+            border-top: 1px solid #e0e0e0;
+            margin-top: 50px;
+            padding: 30px 0;
+        }
+
+        .social-link {
+            color: #666666;
+            text-decoration: none;
+            transition: color 0.2s ease;
+            font-size: 20px;
+        }
+
+        .social-link:hover {
+            color: #000000;
+        }
+
+        .footer-text {
+            font-size: 13px;
+            color: #999999;
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-5" style="max-width: 600px;">
+
+        <!-- Header -->
+        <div class="text-center mb-4">
+            <h1 class="h3 mb-1">RouteSmart Zim</h1>
+            <p class="header-subtitle">Optimize Delivery Routes. Save Fuel. Save Time. Deliver Faster.</p>
+        </div>
+
+        <!-- Location Inputs -->
+        <div class="card mb-3">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="fw-medium">Locations</span>
+                    <span class="requests-remaining">3 requests remaining</span>
+                </div>
+
+                <div id="locationList">
+                    <div class="location-item">
+                        <span class="location-number">1</span>
+                        <input type="text" placeholder="Starting point (e.g. Msasa, Harare)" data-index="0">
+                        <button class="location-btn" onclick="useCurrentLocation(this)" title="Use current location">
+                            <i class="bi bi-geo-alt"></i>
+                        </button>
+                        <button class="remove-btn" onclick="removeLocation(this)" title="Remove">&times;</button>
+                    </div>
+                    <div class="location-item">
+                        <span class="location-number">2</span>
+                        <input type="text" placeholder="Enter location or paste Google Maps link" data-index="1">
+                        <button class="location-btn" onclick="useCurrentLocation(this)" title="Use current location">
+                            <i class="bi bi-geo-alt"></i>
+                        </button>
+                        <button class="remove-btn" onclick="removeLocation(this)" title="Remove">&times;</button>
+                    </div>
+                </div>
+
+                <button class="btn btn-outline-secondary w-100 mt-2" onclick="addLocation()" id="addLocationBtn">
+                    + Add Location
+                </button>
+                <div class="text-end mt-2">
+                    <small class="text-muted"><span id="locationCount">2</span>/10 locations</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Route Options -->
+        <div class="card mb-3">
+            <div class="card-body">
+                <label class="form-label fw-medium">Route Type</label>
+                <select class="form-select" id="routeType">
+                    <option value="ROUND_TRIP" selected>Round trip (return to start)</option>
+                    <option value="ONE_WAY_FIXED_END">One-way (end at last location)</option>
+                    <option value="ONE_WAY_OPEN">One-way (optimize end point)</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Optimize Button -->
+        <button class="btn btn-primary w-100 py-2 mb-4" onclick="optimizeRoute()" id="optimizeBtn">
+            Optimize Route
+        </button>
+
+        <!-- Results Section -->
+        <div id="results" class="card">
+            <div class="card-body">
+                <h5 class="mb-3">Optimized Route</h5>
+
+                <div id="resultList">
+                    <!-- Results will be populated here -->
+                </div>
+
+                <div class="route-summary">
+                    <div class="route-summary-title">Trip Summary</div>
+                    <div class="route-summary-item">
+                        <span>Total Distance</span>
+                        <span id="totalDistance">0 km</span>
+                    </div>
+                    <div class="route-summary-item">
+                        <span>Estimated Drive Time</span>
+                        <span id="totalTime">0 mins</span>
+                    </div>
+                    <div class="route-summary-item">
+                        <span>Number of Stops</span>
+                        <span id="totalStops">0</span>
+                    </div>
+                </div>
+
+                <!-- Embedded Map -->
+                <div class="mt-3">
+                    <div id="mapContainer" class="map-container">
+                        <iframe
+                            id="routeMap"
+                            width="100%"
+                            height="300"
+                            style="border: 1px solid #e0e0e0; border-radius: 4px;"
+                            loading="lazy"
+                            allowfullscreen
+                            referrerpolicy="no-referrer-when-downgrade"
+                            src="">
+                        </iframe>
+                    </div>
+                    <div class="map-legend mt-2">
+                        <small class="text-muted">
+                            <span class="legend-marker">A</span> Start &nbsp;
+                            <span class="legend-marker">B-...</span> Stops &nbsp;
+                            <span class="legend-line"></span> Route
+                        </small>
+                    </div>
+                </div>
+
+                <a href="#" class="btn btn-outline-secondary w-100 mt-3" id="googleMapsLink" target="_blank">
+                    Open in Google Maps
+                </a>
+            </div>
+        </div>
+        <footer class="text-center">
+            <div class="container">
+                <div class="d-flex justify-content-center gap-4 mb-3">
+                    <a href="https://www.linkedin.com/in/tawanda-banda-698b468a/" target="_blank" class="social-link" title="LinkedIn">
+                        <i class="bi bi-linkedin"></i>
+                    </a>
+                    <a href="https://x.com/TBanda27" target="_blank" class="social-link" title="Twitter/X">
+                        <i class="bi bi-twitter-x"></i>
+                    </a>
+                </div>
+                <p class="footer-text mb-0">
+                    © <span id="currentYear"></span> RouteSmart Zim. Built for Zimbabwean SMEs.
+                </p>
+            </div>
+        </footer>
+    </div>
+
+
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('currentYear').textContent = new Date().getFullYear().toString();
+        const MAX_LOCATIONS = 10;
+
+        function updateLocationNumbers() {
+            const items = document.querySelectorAll('.location-item');
+            items.forEach((item, index) => {
+                item.querySelector('.location-number').textContent = index + 1;
+                item.querySelector('input').dataset.index = index;
+            });
+            document.getElementById('locationCount').textContent = items.length;
+
+            // Disable add button if max reached
+            document.getElementById('addLocationBtn').disabled = items.length >= MAX_LOCATIONS;
+        }
+
+        function addLocation() {
+            const list = document.getElementById('locationList');
+            const count = list.children.length;
+
+            if (count >= MAX_LOCATIONS) return;
+
+            const item = document.createElement('div');
+            item.className = 'location-item';
+            item.innerHTML = `
+                <span class="location-number">${count + 1}</span>
+                <input type="text" placeholder="Enter location or paste Google Maps link" data-index="${count}">
+                <button class="location-btn" onclick="useCurrentLocation(this)" title="Use current location">
+                    <i class="bi bi-geo-alt"></i>
+                </button>
+                <button class="remove-btn" onclick="removeLocation(this)" title="Remove">&times;</button>
+            `;
+            list.appendChild(item);
+            updateLocationNumbers();
+
+            // Focus the new input
+            item.querySelector('input').focus();
+        }
+
+        function removeLocation(btn) {
+            const list = document.getElementById('locationList');
+            if (list.children.length <= 2) {
+                alert('You need at least 2 locations');
+                return;
+            }
+            btn.closest('.location-item').remove();
+            updateLocationNumbers();
+        }
+
+        function useCurrentLocation(btn) {
+            if (!navigator.geolocation) {
+                alert('Geolocation is not supported by your browser');
+                return;
+            }
+
+            const input = btn.closest('.location-item').querySelector('input');
+            const originalIcon = btn.innerHTML;
+            btn.innerHTML = '<i class="bi bi-arrow-repeat"></i>';
+            btn.disabled = true;
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    // Use coordinates as the location value
+                    input.value = `${lat},${lng}`;
+                    btn.innerHTML = '<i class="bi bi-check-lg"></i>';
+                    setTimeout(() => {
+                        btn.innerHTML = originalIcon;
+                        btn.disabled = false;
+                    }, 1500);
+                },
+                (error) => {
+                    let message = 'Unable to get your location';
+                    if (error.code === error.PERMISSION_DENIED) {
+                        message = 'Location access denied. Please enable location permissions.';
+                    }
+                    alert(message);
+                    btn.innerHTML = originalIcon;
+                    btn.disabled = false;
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                }
+            );
+        }
+
+        function getLocations() {
+            const inputs = document.querySelectorAll('.location-item input');
+            const locations = [];
+            inputs.forEach(input => {
+                const value = input.value.trim();
+                if (value) {
+                    locations.push(value);
+                }
+            });
+            return locations;
+        }
+
+        async function optimizeRoute() {
+            const locations = getLocations();
+
+            if (locations.length < 2) {
+                alert('Please enter at least 2 locations');
+                return;
+            }
+
+            const routeType = document.getElementById('routeType').value;
+            const btn = document.getElementById('optimizeBtn');
+
+            btn.disabled = true;
+            btn.textContent = 'Optimizing...';
+
+            try {
+                const response = await fetch('/api/optimize', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        locations: locations,
+                        routeType: routeType
+                    })
+                });
+
+                if (response.status === 429) {
+                    alert('Rate limit exceeded. Please try again later.');
+                    return;
+                }
+
+                if (!response.ok) {
+                    throw new Error('Optimization failed');
+                }
+
+                const result = await response.json();
+                displayResults(result);
+
+            } catch (error) {
+                alert('Error: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Optimize Route';
+            }
+        }
+
+        function displayResults(result) {
+            const resultList = document.getElementById('resultList');
+            resultList.innerHTML = '';
+
+            // Display route description from backend (includes distances)
+            if (result.routeDescription && result.routeDescription.length > 0) {
+                result.routeDescription.forEach((step, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'result-item';
+                    div.innerHTML = `
+                        <div class="d-flex justify-content-between">
+                            <span>${index + 1}. ${step}</span>
+                        </div>
+                    `;
+                    resultList.appendChild(div);
+                });
+            } else {
+                // Fallback to location-based display
+                result.optimizedOrder.forEach((location, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'result-item';
+                    const distance = location.distance_from_previous || location.distanceFromPrevious || 0;
+                    div.innerHTML = `
+                        <div class="d-flex justify-content-between">
+                            <span>${index + 1}. ${location.name}</span>
+                            ${index > 0 ? `<span class="result-distance">${typeof distance === 'number' ? distance.toFixed(2) : distance} km</span>` : '<span class="result-distance">Start</span>'}
+                        </div>
+                    `;
+                    resultList.appendChild(div);
+                });
+            }
+
+            document.getElementById('totalDistance').textContent = result.totalDistanceKm + ' km';
+            document.getElementById('totalTime').textContent = result.totalTimeMinutes + ' mins';
+            document.getElementById('totalStops').textContent = result.optimizedOrder.length;
+            document.getElementById('googleMapsLink').href = result.googleMapsUrl;
+
+            // Update embedded map
+            const embedUrl = result.embedMapUrl || result.embed_map_url;
+            if (embedUrl) {
+                document.getElementById('routeMap').src = embedUrl;
+            }
+
+            document.getElementById('results').style.display = 'block';
+
+            // Scroll to results
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+        }
+
+    </script>
+</body>
+</html>

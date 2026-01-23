@@ -17,5 +17,4 @@ rate-limit:
 
 # Python Optimizer Configuration
 optimizer:
-  python-path: ${PYTHON_PATH:python}
-  script-path: ${user.dir}/python/optimizer.py
+  url: ${OPTIMIZER_URL:http://localhost:8001}

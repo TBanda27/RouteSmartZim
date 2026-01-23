@@ -21,6 +21,11 @@ public class LocationParserService {
             Pattern.CASE_INSENSITIVE
     );
 
+    // Raw coordinates pattern: lat,lng (e.g., -17.8252,31.0335)
+    private static final Pattern COORDINATES_PATTERN = Pattern.compile(
+            "^(-?\\d+\\.\\d+),\\s*(-?\\d+\\.\\d+)$"
+    );
+
     // Google Maps URL patterns for coordinate extraction
     private static final Pattern GOOGLE_MAPS_Q_PATTERN = Pattern.compile(
             "[?&]q=(-?\\d+\\.\\d+),(-?\\d+\\.\\d+)"
@@ -41,13 +46,36 @@ public class LocationParserService {
     }
 
     public Location parseLocation(String input) {
-        if (isGoogleMapsUrl(input)) {
+        if (isCoordinates(input)) {
+            return parseCoordinates(input);
+        } else if (isGoogleMapsUrl(input)) {
             return parseGoogleMapsUrl(input);
         } else if (isEircode(input)) {
             return parseEircode(input);
         } else {
             return parseLocationName(input);
         }
+    }
+
+    private boolean isCoordinates(String input) {
+        return COORDINATES_PATTERN.matcher(input.trim()).matches();
+    }
+
+    private Location parseCoordinates(String input) {
+        Matcher matcher = COORDINATES_PATTERN.matcher(input.trim());
+        if (matcher.matches()) {
+            double latitude = Double.parseDouble(matcher.group(1));
+            double longitude = Double.parseDouble(matcher.group(2));
+            log.info("Parsed coordinates: {}, {}", latitude, longitude);
+            return Location.builder()
+                    .name("Current Location")
+                    .originalInput(input)
+                    .latitude(latitude)
+                    .longitude(longitude)
+                    .inputType(InputType.CURRENT_LOCATION)
+                    .build();
+        }
+        return parseLocationName(input);
     }
 
     private boolean isGoogleMapsUrl(String input) {

@@ -19,4 +19,5 @@ public class RouteResponse {
     private String googleMapsUrl;
     private String embedMapUrl;
     private Integer remainingRequests;
+    private List<String> routeDescription;
 }
