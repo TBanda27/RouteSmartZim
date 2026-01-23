@@ -20,9 +20,15 @@ public class OptimizerService {
     private final OptimizerConfig optimizerConfig;
     private final RestTemplate restTemplate;
 
+    // Main constructor for production
     public OptimizerService(OptimizerConfig optimizerConfig) {
+        this(optimizerConfig, new RestTemplate());
+    }
+
+    // Constructor for testing (allows injecting mock RestTemplate)
+    public OptimizerService(OptimizerConfig optimizerConfig, RestTemplate restTemplate) {
         this.optimizerConfig = optimizerConfig;
-        this.restTemplate = new RestTemplate();
+        this.restTemplate = restTemplate;
     }
 
     public OptimizationResult optimize(List<Location> locations, int[][] distanceMatrix, boolean isRoundTrip) {
