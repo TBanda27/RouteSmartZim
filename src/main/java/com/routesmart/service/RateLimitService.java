@@ -32,17 +32,17 @@ public class RateLimitService {
     public int getRemainingRequests(String clientIp) {
         Bucket bucket = buckets.get(clientIp);
         if (bucket == null) {
-            return rateLimitConfig.getRequestsPerHour();
+            return rateLimitConfig.getRequestsPerDay();
         }
         return (int) bucket.getAvailableTokens();
     }
 
     private Bucket createBucket(String clientIp) {
         Bandwidth limit = Bandwidth.builder()
-                .capacity(rateLimitConfig.getRequestsPerHour())
-                .refillIntervally(rateLimitConfig.getRequestsPerHour(), Duration.ofHours(1))
+                .capacity(rateLimitConfig.getRequestsPerDay())
+                .refillIntervally(rateLimitConfig.getRequestsPerDay(), Duration.ofDays(1))
                 .build();
-        log.info("Created new rate limit bucket for IP: {}", clientIp);
+        log.info("Created new rate limit bucket for IP: {} ({} requests/day)", clientIp, rateLimitConfig.getRequestsPerDay());
         return Bucket.builder().addLimit(limit).build();
     }
 }

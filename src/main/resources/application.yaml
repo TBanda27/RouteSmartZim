@@ -12,8 +12,7 @@ google:
 
 # Rate Limiting Configuration
 rate-limit:
-  requests-per-hour: ${RATE_LIMIT_REQUESTS_PER_HOUR:2}
-  max-locations: ${RATE_LIMIT_MAX_LOCATIONS:10}
+  requests-per-day: ${RATE_LIMIT_REQUESTS_PER_DAY:5}
 
 # Python Optimizer Configuration
 optimizer:
