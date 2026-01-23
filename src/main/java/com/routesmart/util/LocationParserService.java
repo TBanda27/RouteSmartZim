@@ -143,9 +143,10 @@ public class LocationParserService {
     }
 
     private Location parseLocationName(String input) {
-        log.info("Parsed location name: {}", input);
+        String trimmed = input.trim();
+        log.info("Parsed location name: {}", trimmed);
         return Location.builder()
-                .name(input)
+                .name(trimmed)
                 .originalInput(input)
                 .inputType(InputType.LOCATION_NAME)
                 .build();
