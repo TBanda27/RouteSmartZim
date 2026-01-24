@@ -60,7 +60,6 @@ public class LocationParserService {
     private boolean isCoordinates(String input) {
         return COORDINATES_PATTERN.matcher(input.trim()).matches();
     }
-
     private Location parseCoordinates(String input) {
         Matcher matcher = COORDINATES_PATTERN.matcher(input.trim());
         if (matcher.matches()) {

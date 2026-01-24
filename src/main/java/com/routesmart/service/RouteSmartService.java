@@ -1,7 +1,7 @@
 package com.routesmart.service;
 
 import com.routesmart.config.GoogleMapsConfig;
-import com.routesmart.dto.OptimizationResult;
+import com.routesmart.dto.DirectionsResult;
 import com.routesmart.dto.RouteRequest;
 import com.routesmart.dto.RouteResponse;
 import com.routesmart.enums.RouteType;
@@ -18,16 +18,13 @@ public class RouteSmartService {
 
     private final LocationParserService locationParserService;
     private final GoogleMapsService googleMapsService;
-    private final OptimizerService optimizerService;
     private final GoogleMapsConfig googleMapsConfig;
 
     public RouteSmartService(LocationParserService locationParserService,
                              GoogleMapsService googleMapsService,
-                             OptimizerService optimizerService,
                              GoogleMapsConfig googleMapsConfig) {
         this.locationParserService = locationParserService;
         this.googleMapsService = googleMapsService;
-        this.optimizerService = optimizerService;
         this.googleMapsConfig = googleMapsConfig;
     }
 
@@ -51,36 +48,16 @@ public class RouteSmartService {
                     loc.getInputType());
         }
 
-        // Step 3: Get distance matrix
-        int[][] distanceMatrix = googleMapsService.getDistanceMatrix(locations);
-
-        // Step 4: Optimize route using Python service
+        // Step 3: Get optimized route using Google Directions API with optimizeWaypoints
         boolean isRoundTrip = request.getRouteType() == RouteType.ROUND_TRIP;
-        OptimizationResult result = optimizerService.optimize(locations, distanceMatrix, isRoundTrip);
+        DirectionsResult result = googleMapsService.getOptimizedRoute(locations, isRoundTrip);
 
-        log.info("=== Optimized Route ===");
-        for (String step : result.getRouteDescription()) {
-            log.info(step);
-        }
-
-        // Set distance from previous for each location
         List<Location> optimizedLocations = result.getOptimizedLocations();
-        List<Integer> order = result.getOptimizedOrder();
-        for (int i = 0; i < optimizedLocations.size(); i++) {
-            if (i == 0) {
-                optimizedLocations.get(i).setDistanceFromPrevious(0.0);
-            } else {
-                int prevIdx = order.get(i - 1);
-                int currIdx = order.get(i);
-                double distanceKm = distanceMatrix[prevIdx][currIdx] / 1000.0;
-                optimizedLocations.get(i).setDistanceFromPrevious(Math.round(distanceKm * 100.0) / 100.0);
-            }
-        }
 
         return RouteResponse.builder()
                 .optimizedOrder(optimizedLocations)
                 .totalDistanceKm(result.getTotalDistanceKm())
-                .totalTimeMinutes(0)
+                .totalTimeMinutes(result.getTotalDurationMinutes())
                 .isRoundTrip(isRoundTrip)
                 .googleMapsUrl(buildGoogleMapsUrl(optimizedLocations, isRoundTrip))
                 .embedMapUrl(buildEmbedMapUrl(optimizedLocations, isRoundTrip))

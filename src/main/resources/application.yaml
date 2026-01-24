@@ -13,7 +13,3 @@ google:
 # Rate Limiting Configuration
 rate-limit:
   requests-per-day: ${RATE_LIMIT_REQUESTS_PER_DAY:5}
-
-# Python Optimizer Configuration
-optimizer:
-  url: ${OPTIMIZER_URL:http://localhost:8001}
