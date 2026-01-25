@@ -76,7 +76,6 @@ public class LocationParserService {
         }
         return parseLocationName(input);
     }
-
     private boolean isGoogleMapsUrl(String input) {
         return input.contains("google.com/maps") || input.contains("goo.gl/maps");
     }
